@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Graph implements Iterable<Graph.Vertex> {
+	// Add fields to represent attributes of vertices here
+
     AdjList[] adjList;
     int n; // number of verices in the graph
     int m; // number of edges in the graph
@@ -22,7 +24,7 @@ public class Graph implements Iterable<Graph.Vertex> {
      */
 
     public class Vertex {
-	int name; // name of the vertex
+			int name; // name of the vertex
 
 	/**
 	 * Constructor for vertex
