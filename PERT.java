@@ -47,7 +47,19 @@ public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
 		get(u).duration = d;
 	}
 
-	// Implement the PERT algorithm. Returns false if the graph g is not a DAG.
+	/**
+	 * Computes the PERT (Program Evaluation and Review Technique) for the graph.
+	 *
+	 * This method performs the following steps:
+	 * 1. Checks if the graph is empty and returns true if it is.
+	 * 2. Orders tasks using topological order.
+	 * 3. If the graph is not a DAG (Directed Acyclic Graph), returns false.
+	 * 4. Computes the earliest start (ES) and earliest finish (EF) times for each vertex.
+	 * 5. Computes the latest start (LS) and latest finish (LF) times for each vertex.
+	 * 6. Determines the slack for each vertex.
+	 *
+	 * @return true if the graph is a DAG and PERT can be computed, false otherwise.
+	 */
 	public boolean pert() {
 		if (g.size() == 0) {
 			System.out.println("Graph is empty. Trivially a DAG.");
@@ -57,8 +69,7 @@ public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
 		// Order tasks using topological order
 		finishList = topologicalOrder();
 		// If the graph is not a DAG, return false
-		if (finishList == null) {
-			System.out.println("Cycle detected. Graph is not a DAG.");
+		if (finishList == null || finishList.size() != g.size()) {
 			return false;
 		}
 
@@ -86,7 +97,7 @@ public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
 			PERTVertex uVertex = get(u);
 
 			// If no successors, LF = EF
-			if(!g.outEdges(u).iterator().hasNext()) {
+			if (!g.outEdges(u).iterator().hasNext()) {
 				uVertex.LF = uVertex.EF;
 			} else {
 				// Set default value to MAX
@@ -110,8 +121,16 @@ public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
 		return true;
 	}
 
-
-	// Find a topological order of g using DFS
+	/**
+	 * Computes the topological order of the vertices in the graph.
+	 *
+	 * This method performs a Depth-First Search (DFS) on the graph to determine
+	 * if it is acyclic and to compute the topological order of the vertices.
+	 *
+	 * @return A LinkedList of vertices in topological order if the graph is
+	 *         acyclic,
+	 *         or null if a cycle is detected in the graph.
+	 */
 	LinkedList<Vertex> topologicalOrder() {
 		// Init list to store the topological order
 		finishList = new LinkedList<>();
@@ -130,8 +149,16 @@ public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
 		return finishList;
 	}
 
-	// DFS to explore vertices and determine if acyclic
-	// stack is evidence in directed path
+	/**
+	 * Performs a Depth-First Search (DFS) on the graph to detect cycles and
+	 * populate the finish list in topological order.
+	 *
+	 * @param u        the current vertex being explored
+	 * @param explored an array indicating whether each vertex has been explored
+	 * @param onStack  an array indicating whether each vertex is currently on the
+	 *                 recursion stack
+	 * @return true if no cycles are detected, false if a cycle is detected
+	 */
 	private boolean dfs(Vertex u, boolean[] explored, boolean[] onStack) {
 		// Mark the current vertex as explored and on the stack
 		explored[u.getIndex()] = true;
@@ -215,7 +242,6 @@ public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
 		}
 		return count;
 	}
-
 
 	public static void main(String[] args) throws Exception {
 		String graph = "10 13   1 2 1   2 4 1   2 5 1   3 5 1   3 6 1   4 7 1   5 7 1   5 8 1   6 8 1   6 9 1   7 10 1   8 10 1   9 10 1      0 3 2 3 2 1 3 2 4 1";
