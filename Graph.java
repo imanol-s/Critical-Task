@@ -12,10 +12,8 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Graph implements Iterable<Graph.Vertex> {
-	// Add fields to represent attributes of vertices here
-
     AdjList[] adjList;
-    int n; // number of verices in the graph
+    int n; // number of vertices in the graph
     int m; // number of edges in the graph
     final boolean directed;  // true if graph is directed, false otherwise
 
