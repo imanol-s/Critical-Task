@@ -47,19 +47,6 @@ public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
 		get(u).duration = d;
 	}
 
-	/**
-	 * Computes the PERT (Program Evaluation and Review Technique) for the graph.
-	 *
-	 * This method performs the following steps:
-	 * 1. Checks if the graph is empty and returns true if it is.
-	 * 2. Orders tasks using topological order.
-	 * 3. If the graph is not a DAG (Directed Acyclic Graph), returns false.
-	 * 4. Computes the earliest start (ES) and earliest finish (EF) times for each vertex.
-	 * 5. Computes the latest start (LS) and latest finish (LF) times for each vertex.
-	 * 6. Determines the slack for each vertex.
-	 *
-	 * @return true if the graph is a DAG and PERT can be computed, false otherwise.
-	 */
 	public boolean pert() {
 		if (g.size() == 0) {
 			System.out.println("Graph is empty. Trivially a DAG.");
@@ -92,30 +79,27 @@ public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
 
 		// Backwards for latest start and finish times
 		LinkedList<Vertex> reverseFinishList = new LinkedList<>(finishList);
-		while (!reverseFinishList.isEmpty()) {
-			Vertex u = reverseFinishList.pollLast();
+		for (Vertex u : reverseFinishList) {
 			PERTVertex uVertex = get(u);
 
 			// If no successors, LF = EF
 			if (!g.outEdges(u).iterator().hasNext()) {
 				uVertex.LF = uVertex.EF;
 			} else {
-				// Set default value to MAX
 				uVertex.LF = Integer.MAX_VALUE;
-				// iterate through the out edges of the vertex
 				for (Edge e : g.outEdges(u)) {
 					Vertex v = e.toVertex();
-					// Slide 35. DFS S(v) = min{LS(u)} where (u,v) in Graph
+					// Use the LS of successors to update LF
 					uVertex.LF = Math.min(uVertex.LF, get(v).LS);
 				}
 			}
 			uVertex.LS = uVertex.LF - uVertex.duration; // LS = LF - duration
 		}
 
-		// Determine slack for u: Slide31: SL(u) : LF(u) - EF(u)
+		// Determine slack for each vertex: Slide31: SL(u) : LF(u) - EF(u)
 		for (Vertex u : finishList) {
 			PERTVertex uVertex = get(u);
-			uVertex.slack = uVertex.LF - uVertex.EF; // Slack = LF - EF
+			uVertex.slack = uVertex.LF - uVertex.EF;
 		}
 
 		return true;
@@ -236,7 +220,7 @@ public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
 	public int numCritical() {
 		int count = 0;
 		for (Vertex u : g) {
-			if (get(u).slack == 0) {
+			if (critical(u)) { // Slack is 0
 				count++;
 			}
 		}
