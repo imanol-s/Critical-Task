@@ -1,13 +1,10 @@
-/* Starter code for PERT algorithm (Project 4)
- * @author rbk
- */
-
-// change to your netid
 package ixs190023;
 
-// replace ixs190023 with your netid below
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 
 import ixs190023.Graph.Edge;
@@ -15,240 +12,245 @@ import ixs190023.Graph.Factory;
 import ixs190023.Graph.GraphAlgorithm;
 import ixs190023.Graph.Vertex;
 
+/**
+ * Implementation of PERT (Program Evaluation and Review Technique) algorithm
+ * for project scheduling and critical path analysis.
+ */
 public class PERT extends GraphAlgorithm<PERT.PERTVertex> {
-	LinkedList<Vertex> finishList;
-	public static final int INF = Integer.MAX_VALUE;
+    /** List of vertices in topological order */
+    private LinkedList<Vertex> finishList;
 
-	// class to store
-	public static class PERTVertex implements Factory {
-		// Add fields to represent attributes of vertices here
-		int duration;
-		int ES, EF, LS, LF, slack;
+    /** Constant representing infinity for LF initialization */
+    public static final int INF = Integer.MAX_VALUE;
 
-		public PERTVertex(Vertex u) {
-			// Initialize all fields
-			this.duration = 0;
-			this.ES = this.EF = this.LS = this.LF = this.slack = 0;
+    // Class representing PERT-specific attributes for each vertex
+    public static class PERTVertex implements Factory {
+        int duration; // Duration of the task
+        int ES, EF; // Earliest start and finish times
+        int LS, LF; // Latest start and finish times
+        int slack; // Slack time: LF - EF
 
-		}
+        public PERTVertex(Vertex u) {
+            // Initialize all values to 0
+            this.duration = 0;
+            this.ES = this.EF = this.LS = this.LF = this.slack = 0;
+        }
 
-		public PERTVertex make(Vertex u) {
-			return new PERTVertex(u);
-		}
-	}
+        // Factory method to create a new PERTVertex for a given Vertex
+        public PERTVertex make(Vertex u) {
+            return new PERTVertex(u);
+        }
+    }
 
-	// Constructor for PERT is private. Create PERT instances with static method
-	// pert().
-	private PERT(Graph g) {
-		super(g, new PERTVertex(null));
-	}
+    // Private constructor for PERT
+    private PERT(Graph g) {
+        super(g, new PERTVertex(null));
+    }
 
-	public void setDuration(Vertex u, int d) {
-		get(u).duration = d;
-	}
+    // Set the duration of a task (vertex)
+    public void setDuration(Vertex u, int d) {
+        get(u).duration = d;
+    }
 
-	public boolean pert() {
-		if (g.size() == 0) {
-			System.out.println("Graph is empty. Trivially a DAG.");
-			return true;
-		}
+    // Main method to execute the PERT algorithm
+    /**
+     * Performs the PERT (Program Evaluation and Review Technique) analysis on the graph.
+     *
+     * The method calculates the earliest start (ES), earliest finish (EF), latest start (LS),
+     * latest finish (LF), and slack times for each vertex in the graph. It also determines
+     * if the graph is a Directed Acyclic Graph (DAG) and computes the project completion time.
+     *
+     * @return true if the graph is a DAG and the PERT analysis is successfully performed, false otherwise.
+     */
+    public boolean pert() {
+        // Handle empty graphs
+        if (g.size() == 0) {
+            System.out.println("Graph is empty. Trivially a DAG.");
+            return true;
+        }
 
-		// Order tasks using topological order
-		finishList = topologicalOrder();
-		// If the graph is not a DAG, return false
-		if (finishList == null || finishList.size() != g.size()) {
-			return false;
-		}
+        // Get topological order
+        finishList = topologicalOrder();
+        if (finishList == null || finishList.size() != g.size()) {
+            // Graph has cycles, so it is not a DAG
+            System.out.println("Graph is not a DAG.");
+            return false;
+        }
 
-		// otherwise we can pipe values to determine ES, EF, LS, LF, slack
-		for (Vertex u : finishList) {
-			// access the attributes of vertex
-			PERTVertex uVertex = get(u);
-			// if no predecessors, ES = 0
-			if (!g.inEdges(u).iterator().hasNext()) {
-				uVertex.ES = 0;
-			}
+        // Forward pass: Calculate ES (Earliest Start) and EF (Earliest Finish)
+        for (Vertex u : finishList) {
+            PERTVertex pu = get(u);
+            for (Edge e : g.inEdges(u)) {
+                Vertex v = e.fromVertex(); // Predecessor vertex
+                PERTVertex pv = get(v);
+                pu.ES = Math.max(pu.ES, pv.EF); // Set ES as max of predecessors' EF
+            }
+            pu.EF = pu.ES + pu.duration; // EF = ES + duration
+        }
 
-			for (Edge e : g.inEdges(u)) {
-				Vertex v = e.fromVertex();
-				// Slide 35. DFS S(v) = max{EF(u)} where (u,v) in Graph
-				uVertex.ES = Math.max(uVertex.ES, get(v).EF);
-			}
-			uVertex.EF = uVertex.ES + uVertex.duration;
-		}
+        // Determine the project completion time (max EF)
+        int projectCompletionTime = 0;
+        for (Vertex u : g) {
+            PERTVertex pu = get(u);
+            projectCompletionTime = Math.max(projectCompletionTime, pu.EF);
+        }
 
-		// Backwards for latest start and finish times
-		LinkedList<Vertex> reverseFinishList = new LinkedList<>(finishList);
-		for (Vertex u : reverseFinishList) {
-			PERTVertex uVertex = get(u);
+        // Initialize LF for all vertices to the project completion time
+        for (Vertex u : g) {
+            PERTVertex pu = get(u);
+            pu.LF = projectCompletionTime;
+        }
 
-			// If no successors, LF = EF
-			if (!g.outEdges(u).iterator().hasNext()) {
-				uVertex.LF = uVertex.EF;
-			} else {
-				uVertex.LF = Integer.MAX_VALUE;
-				for (Edge e : g.outEdges(u)) {
-					Vertex v = e.toVertex();
-					// Use the LS of successors to update LF
-					uVertex.LF = Math.min(uVertex.LF, get(v).LS);
-				}
-			}
-			uVertex.LS = uVertex.LF - uVertex.duration; // LS = LF - duration
-		}
+        // Backward pass: Calculate LF (Latest Finish) and LS (Latest Start)
+        List<Vertex> reverseFinishList = new ArrayList<>(finishList);
+        Collections.reverse(reverseFinishList); // Reverse topological order
 
-		// Determine slack for each vertex: Slide31: SL(u) : LF(u) - EF(u)
-		for (Vertex u : finishList) {
-			PERTVertex uVertex = get(u);
-			uVertex.slack = uVertex.LF - uVertex.EF;
-		}
+        for (Vertex u : reverseFinishList) {
+            PERTVertex currentPertVertex = get(u);
+            if (!g.outEdges(u).iterator().hasNext()) {
+                // Terminal vertex: set LF to project completion time
+                currentPertVertex.LF = projectCompletionTime;
+            } else {
+                for (Edge e : g.outEdges(u)) {
+                    Vertex v = e.toVertex(); // Successor vertex
+                    PERTVertex pv = get(v);
+                    currentPertVertex.LF = Math.min(currentPertVertex.LF, pv.LS); // Set LF as min of successors' LS
+                }
+            }
+            currentPertVertex.LS = currentPertVertex.LF - currentPertVertex.duration; // LS = LF - duration
+        }
 
-		return true;
-	}
+        // Calculate slack for all vertices
+        for (Vertex u : g) {
+            PERTVertex pu = get(u);
+            pu.slack = pu.LF - pu.EF; // Slack = LF - EF
+        }
 
-	/**
-	 * Computes the topological order of the vertices in the graph.
-	 *
-	 * This method performs a Depth-First Search (DFS) on the graph to determine
-	 * if it is acyclic and to compute the topological order of the vertices.
-	 *
-	 * @return A LinkedList of vertices in topological order if the graph is
-	 *         acyclic,
-	 *         or null if a cycle is detected in the graph.
-	 */
-	LinkedList<Vertex> topologicalOrder() {
-		// Init list to store the topological order
-		finishList = new LinkedList<>();
-		boolean[] explored = new boolean[g.size()];
-		boolean[] onStack = new boolean[g.size()];
+        return true;
+    }
 
-		// DFS on graph to determine if it is acyclic
-		for (Vertex u : g) {
-			if (!explored[u.getIndex()]) {
-				if (!dfs(u, explored, onStack)) {
-					finishList.clear(); // cycle detected clear
-					return null;
-				}
-			}
-		}
-		return finishList;
-	}
+    // Topological sort to determine task ordering
+    private LinkedList<Vertex> topologicalOrder() {
+        finishList = new LinkedList<>();
+        boolean[] explored = new boolean[g.size()]; // Tracks visited vertices
+        boolean[] onStack = new boolean[g.size()]; // Tracks recursion stack for cycle detection
 
-	/**
-	 * Performs a Depth-First Search (DFS) on the graph to detect cycles and
-	 * populate the finish list in topological order.
-	 *
-	 * @param u        the current vertex being explored
-	 * @param explored an array indicating whether each vertex has been explored
-	 * @param onStack  an array indicating whether each vertex is currently on the
-	 *                 recursion stack
-	 * @return true if no cycles are detected, false if a cycle is detected
-	 */
-	private boolean dfs(Vertex u, boolean[] explored, boolean[] onStack) {
-		// Mark the current vertex as explored and on the stack
-		explored[u.getIndex()] = true;
-		onStack[u.getIndex()] = true;
-		// Iterate through the out edges of the vertex
-		for (Edge e : g.outEdges(u)) {
-			Vertex v = e.toVertex();
-			if (!explored[v.getIndex()]) {
-				if (!dfs(v, explored, onStack)) {
-					return false;
-				}
-			} else if (onStack[v.getIndex()]) {
-				// back edge detected in the graph (Absence of back-edge implies acyclic)
-				return false;
-			}
-		}
+        for (Vertex u : g) {
+            if (!explored[u.getIndex()]) {
+                if (!dfs(u, explored, onStack)) {
+                    finishList.clear();
+                    return null; // Cycle detected, no topological order
+                }
+            }
+        }
+        return finishList; // Return vertices in topological order
+    }
 
-		// remove vertex from recursion stack and add vertex to the finishList
-		onStack[u.getIndex()] = false;
-		finishList.addFirst(u);
-		return true;
-	}
+    // Depth-first search for cycle detection and topological sorting
+    private boolean dfs(Vertex u, boolean[] explored, boolean[] onStack) {
+        explored[u.getIndex()] = true; // Mark the vertex as visited
+        onStack[u.getIndex()] = true; // Add to recursion stack
 
-	/*
-	 * Create a PERT instance on g, runs the algorithm.
-	 * Returns PERT instance if successful. Returns null if G is not a DAG.
-	 */
-	public static PERT pert(Graph g, int[] duration) {
-		PERT p = new PERT(g);
-		for (Vertex u : g) {
-			p.setDuration(u, duration[u.getIndex()]);
-		}
-		// Run PERT algorithm. Returns false if g is not a DAG
-		return p.pert() ? p : null;
-	}
+        for (Edge e : g.outEdges(u)) {
+            Vertex v = e.toVertex();
+            if (!explored[v.getIndex()]) {
+                if (!dfs(v, explored, onStack)) {
+                    return false; // Cycle detected
+                }
+            } else if (onStack[v.getIndex()]) {
+                return false; // Cycle detected
+            }
+        }
 
-	// The following methods are called after calling pert().
+        onStack[u.getIndex()] = false; // Remove from recursion stack
+        finishList.addFirst(u); // Add vertex to topological order
+        return true;
+    }
 
-	// Earliest time at which task u can be completed
-	public int ec(Vertex u) {
-		return get(u).ES;
-	}
+    // Static method to create a PERT instance and execute the algorithm
+    public static PERT pert(Graph g, int[] duration) {
+        if (g == null || duration == null || g.size() != duration.length) {
+            throw new IllegalArgumentException("Invalid graph or duration array.");
+        }
 
-	// Latest completion time of u
-	public int lc(Vertex u) {
-		return get(u).LF;
-	}
+        PERT p = new PERT(g);
+        for (Vertex u : g) {
+            p.setDuration(u, duration[u.getIndex()]);
+        }
 
-	// Slack of u Slack for u the maximum time that the task can be delayed without
-	// delaying the project
-	public int slack(Vertex u) {
-		return get(u).slack;
-	}
+        return p.pert() ? p : null;
+    }
 
-	/*
-	 * Length of a critical path (time taken to complete project)
-	 * SL(u) : LF(u) - EF(u);
-	 * SL(u) = 0 for critical vertices
-	 */
-	public int criticalPath() {
-		int maxEF = 0;
-		for (Vertex u : g) {
-			maxEF = Math.max(maxEF, get(u).EF);
-		}
-		return maxEF;
-	}
+    // Getter for earliest completion time of a task
+    public int ec(Vertex u) {
+        return get(u).ES;
+    }
 
-	// Is u a critical vertex?
-	public boolean critical(Vertex u) {
-		return get(u).slack == 0;
-	}
+    // Getter for latest completion time of a task
+    public int lc(Vertex u) {
+        return get(u).LF;
+    }
 
-	// Number of critical vertices of g
-	// SL(u) = 0 for critical vertices
-	public int numCritical() {
-		int count = 0;
-		for (Vertex u : g) {
-			if (critical(u)) { // Slack is 0
-				count++;
-			}
-		}
-		return count;
-	}
+    // Getter for slack of a task
+    public int slack(Vertex u) {
+        return get(u).slack;
+    }
 
-	public static void main(String[] args) throws Exception {
-		String graph = "10 13   1 2 1   2 4 1   2 5 1   3 5 1   3 6 1   4 7 1   5 7 1   5 8 1   6 8 1   6 9 1   7 10 1   8 10 1   9 10 1      0 3 2 3 2 1 3 2 4 1";
-		Scanner in;
-		// If there is a command line argument, use it as file from which
-		// input is read, otherwise use input from string.
-		in = args.length > 0 ? new Scanner(new File(args[0])) : new Scanner(graph);
-		Graph g = Graph.readDirectedGraph(in);
-		g.printGraph(false);
+    // Determines the critical path length (project completion time)
+    public int criticalPath() {
+        int maxEF = 0;
+        for (Vertex u : g) {
+            maxEF = Math.max(maxEF, get(u).EF);
+        }
+        return maxEF;
+    }
 
-		int[] duration = new int[g.size()];
-		for (int i = 0; i < g.size(); i++) {
-			duration[i] = in.nextInt();
-		}
-		PERT p = pert(g, duration);
-		if (p == null) {
-			System.out.println("Invalid graph: not a DAG");
-		} else {
-			System.out.println("Number of critical vertices: " + p.numCritical());
-			System.out.println("u\tEC\tLC\tSlack\tCritical");
-			for (Vertex u : g) {
-				System.out.println(u + "\t" + p.ec(u) + "\t" + p.lc(u) + "\t" + p.slack(u) + "\t" + p.critical(u));
-			}
-		}
-	}
+    // Checks if a task is critical (no slack)
+    public boolean critical(Vertex u) {
+        return get(u).slack == 0;
+    }
+
+    // Counts the number of critical tasks
+    public int numCritical() {
+        int count = 0;
+        for (Vertex u : g) {
+            if (critical(u)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // Main method to test the PERT algorithm
+    public static void main(String[] args) throws Exception {
+        // Input graph and durations
+        String graph = "10 13   1 2 1   2 4 1   2 5 1   3 5 1   3 6 1   4 7 1   5 7 1   5 8 1   6 8 1   6 9 1   7 10 1   8 10 1   9 10 1      0 3 2 3 2 1 3 2 4 1";
+        Scanner in = args.length > 0 ? new Scanner(new File(args[0])) : new Scanner(graph);
+
+        Graph g = Graph.readDirectedGraph(in);
+        g.printGraph(false);
+
+        // Read durations
+        int[] duration = new int[g.size()];
+        for (int i = 0; i < g.size(); i++) {
+            if (in.hasNextInt()) {
+                duration[i] = in.nextInt();
+            } else {
+                throw new IllegalArgumentException("Duration array size mismatch.");
+            }
+        }
+
+        // Execute PERT algorithm
+        PERT p = pert(g, duration);
+        if (p == null) {
+            System.out.println("Invalid graph: not a DAG.");
+        } else {
+            System.out.println("Number of critical vertices: " + p.numCritical());
+            System.out.println("u\tEC\tLC\tSlack\tCritical");
+            for (Vertex u : g) {
+                System.out.println(u + "\t" + p.ec(u) + "\t" + p.lc(u) + "\t" + p.slack(u) + "\t" + p.critical(u));
+            }
+            System.out.println("Critical Path Length: " + p.criticalPath());
+        }
+    }
 }
