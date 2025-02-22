@@ -1,4 +1,5 @@
-package ixs190023;
+// Insert folder name here
+package ______;
 
 import java.io.File;
 import java.io.FileNotFoundException;
