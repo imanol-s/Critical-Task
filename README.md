@@ -1,4 +1,4 @@
-# Project Dependency Scheduler (PERT)
+# Critical-Task
 
 ## Description
 Designed and implemented a modular graph structure to model project tasks (PERT), supporting both directed and undirected graphs for flexible task dependency representation. The Program Evaluation and Review Technique (PERT) algorithm uses a weighted average to calculate the expected time for tasks in a project
