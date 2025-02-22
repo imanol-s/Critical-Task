@@ -1,5 +1,4 @@
 # Project Dependency Scheduler (PERT)
-Project Dependency Scheduler is a Java-based application designed to create project schedules, identify task dependencies, and find the critical path of a project.. This repository contains the source code and necessary files to build and run the application.
 
 ## Description
 Designed and implemented a modular graph structure to model project tasks (PERT), supporting both directed and undirected graphs for flexible task dependency representation. The Program Evaluation and Review Technique (PERT) algorithm uses a weighted average to calculate the expected time for tasks in a project
