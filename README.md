@@ -1,7 +1,7 @@
 # Critical-Task
 
 ## Description
-Designed and implemented a modular graph structure to model project tasks (PERT), supporting both directed and undirected graphs for flexible task dependency representation. The Program Evaluation and Review Technique (PERT) algorithm uses a weighted average to calculate the expected time for tasks in a project
+Designed and implemented a modular graph structure to model project tasks (PERT), supporting both directed and undirected graphs for flexible task dependency representation. The Program Evaluation and Review Technique (PERT) algorithm uses a weighted average to calculate the expected time for tasks in a project. Includes class and driver from ***@author rbk***. 
 
 ## Features
 - Developed an algorithm for Program Evaluation and Review Technique (PERT) to analyze task dependencies, calculate earliest/latest start times, and identify critical paths for efficient project scheduling.
