@@ -3,8 +3,8 @@
  * @author rbk
  * 2018/11/06
  */
-// change package name to your netid
-package ixs190023;
+// Change to your Folder name
+package ______;
 
 import java.util.Iterator;
 import java.util.LinkedList;
