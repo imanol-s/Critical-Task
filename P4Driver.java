@@ -1,8 +1,8 @@
-/* Driver code for PERT algorithm (Project 4)
+/* Driver code for PERT algorithm
  * @author rbk
  */
-// Change to your netid
-package ixs190023;
+// Change to your Folder name
+package ______;
 
 import java.util.Scanner;
 
